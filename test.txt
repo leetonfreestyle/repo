@@ -1,2 +1,6 @@
+<<<<<<< HEAD
 1
 1
+=======
+Hello World!
+>>>>>>> 78fd0bab3f30ec761fb418d1c33f3c50973a58c2
