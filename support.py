@@ -1,5 +1,3 @@
-import math
-
 class Sentence(object):
     def getAllActions(self):
         return []
@@ -53,68 +51,3 @@ class FeatureVector(object):
         for key in s1&s2:
             result += fv1[key] * fv2[key]
         return result
-
-class QPSolver(object):
-    """
-    docstring for QPSolver
-    """
-    MAX_ITER = 10000
-    EPS = 1e-8
-    ZERO = 1e-16
-    def hildreth(self, fv, label):
-        LengthOfb = label.__len__()
-        alpha = [0.0] * LengthOfb
-        F = [0.0] * LengthOfb
-        kkt = [0.0] * LengthOfb
-        K = fv.__len__()
-        GramMatrix = [[0]*K for i in range(K)]
-        is_computed = [False] * K
-        for i in range(K):
-            GramMatrix[i][i] = FeatureVector().dotProduct(fv[i],fv[i])
-        #find maximum kkt = F = label
-        max_kkt = float("-inf")
-        max_kkt_i = -1
-        for i in range(LengthOfb):
-            F[i] = label[i]
-            kkt[i] = F[i]
-            if kkt[i] > max_kkt:
-                max_kkt = kkt[i]
-                max_kkt_i = i
-        circle = 0
-        diff_alpha = 0.0
-        try_alpha = 0.0
-        add_alpha = 0.0
-        while max_kkt >= self.EPS and circle < self.MAX_ITER:
-            diff_alpha = F[max_kkt_i] / GramMatrix[max_kkt_i][max_kkt_i]
-            if GramMatrix[max_kkt_i][max_kkt_i] <= self.ZERO:
-                diff_alpha = 0.0
-            try_alpha = alpha[max_kkt_i] + diff_alpha
-            if try_alpha < 0.0:
-                add_alpha = -1.0 * alpha[max_kkt_i]
-            else:
-                add_alpha = diff_alpha
-            alpha[max_kkt_i] += add_alpha
-            if not is_computed[max_kkt_i]:
-                for i in range(K):
-                    GramMatrix[i][max_kkt_i] = FeatureVector().dotProduct(fv[i],fv[max_kkt_i])
-                    is_computed[max_kkt_i] = True
-            for i in range(LengthOfb):
-                F[i] -= add_alpha * GramMatrix[i][max_kkt_i]
-                kkt[i] = F[i]
-                if alpha[i] > self.ZERO:
-                    kkt[i] = abs(F[i])
-            #find maximum kkt
-            max_kkt = float("-inf")
-            max_kkt_i = -1
-            for i in range(LengthOfb):
-                if kkt[i] > max_kkt:
-                    max_kkt = kkt[i]
-                    max_kkt_i = i
-            circle += 1
-        return alpha
-
-def main():
-    qp = QPSolver()
-    print qp.hildreth([{1:1.0,2:1.0,3:1.0},{2:1.0,3:1.0,6:1.0}],[1,-1])
-if __name__ == '__main__':
-    main()

@@ -1,4 +1,7 @@
-from support import * 
+#!/usr/bin/env python
+# -- coding:utf-8 --
+
+from support import *
 import math
 import Queue
 import threading
@@ -49,15 +52,22 @@ class Segmenter(object):
         return valideActions
 
     def decodeBeamSearch(self,sent,trainType):
-        '''
+        '''解码函数
+        Args:
+            sent:类型为Sentence
+            trainType:提供多种模式，有test, standard, early, max,MIRA
+        Return:
+            一个SegState对象数组，通常为两个元素，MIRA模式下返回多个元素，第一个元素为最佳解，其余为次优解
+        Raise:
+            None
         '''
         isTrainMode = False
-        goldActions = []
+        goldActions = [] # <str>
         goldState = None
         goldActionPosition = 0
         results = [None] * 2
-        agenda = []#size = beamSize
-        heap = []#size = beamSize
+        agenda = []# <SegState>
+        heap = []# <SegState>
         scoreBoard = [float("-inf")] * self.beamSize
         # for gold-standard state
         if trainType != "test":
@@ -66,8 +76,8 @@ class Segmenter(object):
             goldState = sent.buildInitState()
         # for max-violation
         if trainType == "max":
-            goldPartialStates = []#ArrayList<SegState>
-            predPartialStates = []#ArrayList<SegState>
+            goldPartialStates = []# <SegState>
+            predPartialStates = []# <SegState>
             maxViolationPosition = -1
             maxMargin = float("-inf")
         if trainType == "MIRA":
@@ -100,7 +110,7 @@ class Segmenter(object):
                 unlabeledFeatures = state.getUnlabeledFeatures()
                 actions = self.getAllValidActions(state,isTrainMode)
                 for action in actions:
-                    labeledFeatures = []#size
+                    labeledFeatures = [] # <str>
                     for feature in unlabeledFeatures:
                         labeledFeatures.append("%s:%s"%(feature,action))
                     score = model.score(model.getFeatureVecotr(labeledFeatures)) + state.getScore()
@@ -157,7 +167,6 @@ class Segmenter(object):
             else:# terminated when the best state reach the terminal state
                 if agenda.__len__() != 0 and agenda[0].isTerminated():
                     break
-            break
         if trainType == "max":
             results[0] = goldPartialStates[maxViolationPosition]
             results[1] = predPartialStates[maxViolationPosition]
@@ -171,15 +180,30 @@ class Segmenter(object):
         return results
 
     def ParserTask(self,sentences):
-        '''
+        '''解码线程函数
+        Args:
+            sentences:待解码的Sentence列表
+        Return:
+            None
+        Raise:
+            None
         '''
         results = []
         for one in sentences:
-            results.append(self.decodeBeamSearch(one,"standard")[0].getFinalResult())
+            results.append(self.decodeBeamSearch(one,"test")[0].getFinalResult())
         self.wq.put(results)
 
     def decodeParalle(self,testSet,outpath,numThreads,numPerTheads):
-        '''
+        '''多线程解码函数
+        Args:
+            testSet:测试数据集
+            outpath:解码结果的保存路径
+            numThreads:总线程数
+            numPerTheads:每个线程中的任务数
+        Return:
+            None
+        Raise:
+            None
         '''
         startTime = time.time()
         batch = 0
@@ -220,7 +244,6 @@ class Segmenter(object):
             with open(outpath,'w') as outFile:
                 for one in results:
                     outFile.write(one + "\n")
-            break
         print "Time: %f"%(time.time() - startTime)
 
 def main():
