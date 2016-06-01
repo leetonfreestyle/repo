@@ -14,15 +14,21 @@ def main():
     with open("dirtyData.dat",'r') as infile:
         for line in infile.xreadlines():
             decodedLine = json.loads(line)
-            digestList.append(decodedLine["digest"].encode("utf-8"))
+            digestList.append(decodedLine["digest"])
             indexList = chidDict.setdefault(decodedLine["chid_1"],list())
             indexList.append(digestIndex)
             digestIndex += 1
+    # print chidDict
     # 建立tf-idf模型
     print "tf-idf calculating..."
-    myTfIdf = tfidf.TFIDF(digestList)
     # 计算idf值
+    myTfIdf = tfidf.TFIDF(digestList)
+    # 显示超过10篇中都出现的词及其idf值
     idfDict = myTfIdf.getIdf()
+    print [(x.encode('utf-8'),idfDict[x])
+        for x in idfDict
+        if idfDict[x] < 2
+    ]
     tfidfMatrix = {}
     for index,value in chidDict.iteritems():
         # 计算在某一分类中词语的tf值
@@ -31,15 +37,15 @@ def main():
         for one in myTfIdf.getTfIdf(tfDict,idfDict):
             oneClass = tfidfMatrix.setdefault(one[0],dict())
             oneClass[index] = one[1]
-    # print tfidfMatrix
-    with open("tf_idf.csv",'w+') as outfile:
+    # save tfidfMatrix
+    with open("tf_idf.txt",'w+') as outfile:
         classNames = list(chidDict.keys())
-        print >>outfile,",%s"%(','.join([str(x) for x in classNames]))
+        print >>outfile,"\t%s"%('\t'.join([str(x) for x in classNames]))
         for token,classDict in tfidfMatrix.iteritems():
-            List = [token]
+            List = [token.encode("utf-8")]
             for one in classNames:
                 List.append(str(classDict.get(one,0.0)))
-            print >>outfile,','.join(List)
+            print >>outfile,'\t'.join(List)
 
 
 if __name__ == '__main__':
